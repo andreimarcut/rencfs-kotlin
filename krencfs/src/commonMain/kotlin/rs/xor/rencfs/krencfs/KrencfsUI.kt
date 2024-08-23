@@ -61,7 +61,6 @@ fun NavigationPanel(
 }
 
 
-
 @Composable
 fun EditVaultPanel(
     modifier: Modifier = Modifier,
@@ -170,11 +169,10 @@ fun EditVaultPanel(
 @Composable
 fun KrencfsUI() {
     val scope = rememberCoroutineScope()
+    var vaultKey by remember { mutableStateOf<String?>(null) }
+
     var vaults by remember { mutableStateOf<Map<String, VaultDataModel>>(emptyMap()) }
     LaunchedEffect(Unit) {
-        // Initialize the database in a coroutine
-
-        // Observe the vaults from the repository
         scope.launch {
             Database.getVaultRepository()
                 .observeVaults()
@@ -197,7 +195,6 @@ fun KrencfsUI() {
             {
                 Row {
 
-                    var vaultKey by remember { mutableStateOf<String?>(null) }
                     Column(
                         Modifier
                             .weight(0.3f)
@@ -229,19 +226,14 @@ fun KrencfsUI() {
                             }
                         }
                         HorizontalDivider()
-                        vaults.apply {
-                            NavigationPanel(
-                                modifier = Modifier
-                                    .fillMaxSize(),
-                                items = this,
-                                itemClicked = { key, vault ->
-                                    println("$key, $vault")
-                                    vaultKey = key
-                                }
-                            )
-                        } ?: Text(
-                            modifier = Modifier.align(alignment = Alignment.CenterHorizontally),
-                            text = "Empty state, Start by adding something"
+                        NavigationPanel(
+                            modifier = Modifier
+                                .fillMaxSize(),
+                            items = vaults,
+                            itemClicked = { key, vault ->
+                                println("$key, $vault")
+                                vaultKey = key
+                            }
                         )
                         VerticalDivider()
                     }
@@ -251,7 +243,7 @@ fun KrencfsUI() {
                     )
                     {
                         vaultKey?.apply {
-                            vaults?.get(this)?.let { vaultModel ->
+                            vaults.get(this)?.let { vaultModel ->
                                 EditVaultPanel(
                                     modifier = Modifier
                                         .fillMaxSize(),
