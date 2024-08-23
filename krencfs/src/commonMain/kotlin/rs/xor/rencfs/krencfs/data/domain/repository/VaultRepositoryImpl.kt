@@ -8,9 +8,9 @@ class VaultRepositoryImpl(
     private val localDataSource: VaultLocalDataSource
 ) : VaultRepository {
 
-    override fun observeVaults(): Flow<Map<Long, VaultDataModel>> {
+    override fun observeVaults(): Flow<Map<String, VaultDataModel>> {
         return localDataSource.observeVaults().map { vaultsList ->
-            vaultsList.associateByTo(LinkedHashMap(), { it.id }, { it.toVaultDataModel() })
+            vaultsList.associateByTo(LinkedHashMap(), { it.id.toString() }, { it.toVaultDataModel() })
         }
     }
 

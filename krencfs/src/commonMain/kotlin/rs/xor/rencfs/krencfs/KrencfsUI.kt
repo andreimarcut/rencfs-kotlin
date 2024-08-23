@@ -14,9 +14,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import io.github.vinceglb.filekit.compose.rememberDirectoryPickerLauncher
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.ui.tooling.preview.Preview
-import rs.xor.rencfs.krencfs.design.custom.AutoDismissibleSnackBar
+import rs.xor.rencfs.krencfs.data.Database
 import rs.xor.rencfs.krencfs.data.domain.model.VaultDataModel
+import rs.xor.rencfs.krencfs.design.custom.AutoDismissibleSnackBar
 
 @Composable
 fun NavigationPanel(
@@ -147,7 +149,12 @@ fun EditVaultPanel(
                 }
                 Button(
                     onClick = {
-                        val toSave = VaultDataModel(name, mountPoint, dataDir)
+                        val toSave = VaultDataModel(
+                            null,
+                            name,
+                            mountPoint,
+                            dataDir
+                        )
                         println("saving $name $toSave")
                         onSave.invoke(toSave)
                     },
@@ -162,6 +169,21 @@ fun EditVaultPanel(
 @Preview
 @Composable
 fun KrencfsUI() {
+    val scope = rememberCoroutineScope()
+    var vaults by remember { mutableStateOf<Map<String, VaultDataModel>>(emptyMap()) }
+    LaunchedEffect(Unit) {
+        // Initialize the database in a coroutine
+
+        // Observe the vaults from the repository
+        scope.launch {
+            Database.getVaultRepository()
+                .observeVaults()
+                .collect { newVaults ->
+                    vaults = newVaults
+                }
+        }
+    }
+
     Surface {
         Scaffold(
             /*TODO*/
@@ -174,11 +196,7 @@ fun KrencfsUI() {
             )
             {
                 Row {
-                    var items by remember {
-                        mutableStateOf<Map<String, VaultDataModel>?>(
-                            null
-                        )
-                    }
+
                     var vaultKey by remember { mutableStateOf<String?>(null) }
                     Column(
                         Modifier
@@ -201,16 +219,17 @@ fun KrencfsUI() {
                             )
                             FloatingActionButton(
                                 onClick = {
-                                    val mutableItems = items?.toMutableMap() ?: mutableMapOf()
-                                    mutableItems.put(mutableItems.size.toString(), VaultDataModel("", "", ""))
-                                    items = mutableItems
+                                    // TODO: ask input via modal/dialog
+                                    scope.launch {
+                                        Database.getVaultRepository().addVault()
+                                    }
                                 }
                             ) {
                                 Text("+")
                             }
                         }
                         HorizontalDivider()
-                        items?.apply {
+                        vaults.apply {
                             NavigationPanel(
                                 modifier = Modifier
                                     .fillMaxSize(),
@@ -232,7 +251,7 @@ fun KrencfsUI() {
                     )
                     {
                         vaultKey?.apply {
-                            items?.get(this)?.let { vaultModel ->
+                            vaults?.get(this)?.let { vaultModel ->
                                 EditVaultPanel(
                                     modifier = Modifier
                                         .fillMaxSize(),
@@ -240,9 +259,9 @@ fun KrencfsUI() {
                                     vault = vaultModel,
                                     onSave = { updatedVault ->
                                         println("onSave $this")
-                                        val mutableItems = items?.toMutableMap() ?: mutableMapOf()
+                                        val mutableItems = vaults?.toMutableMap() ?: mutableMapOf()
                                         mutableItems.replace(this@apply, updatedVault)
-                                        items = mutableItems
+                                        vaults = mutableItems
                                     }
                                 )
                             }
