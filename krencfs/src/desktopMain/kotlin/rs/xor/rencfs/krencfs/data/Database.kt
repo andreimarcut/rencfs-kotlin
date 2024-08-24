@@ -10,14 +10,11 @@ import java.io.File
 actual suspend fun provideSQLDriver(
     schema: SqlSchema<QueryResult.AsyncValue<Unit>>,
     databaseName: String,
-): SqlDriver {
-    val databaseFileName = "${databaseName}.sqlite.db"
-    return JdbcSqliteDriver("jdbc:sqlite:$databaseFileName")
-        .also {
-            var dbFile = File(databaseFileName)
-            if (!dbFile.exists()) {
-                schema.awaitCreate(it)
+    databaseFileName: String,
+): SqlDriver = JdbcSqliteDriver("jdbc:sqlite:$databaseFileName")
+        .apply {
+            println("provideSQLDriver: $this")
+            if (!File(databaseFileName).exists()) {
+                schema.awaitCreate(this)
             }
-            return it
         }
-}

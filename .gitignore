@@ -3,4 +3,4 @@
 **/.gradle/
 .kotlin
 .idea
-*.sqlite.db*..sqlite.db.sqlite.db
+**sqlite.db

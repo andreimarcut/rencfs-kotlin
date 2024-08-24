@@ -13,6 +13,7 @@ import rs.xor.rencfs.krencfs.data.domain.repository.VaultRepositoryImpl
 expect suspend fun provideSQLDriver(
     schema: SqlSchema<QueryResult.AsyncValue<Unit>>,
     databaseName: String,
+    databaseFileName: String = "${databaseName}.sqlite.db",
 ): SqlDriver
 
 object Database {
