@@ -5,7 +5,6 @@ import rs.xor.rencfs.krencfs.data.domain.model.VaultDataModel
 
 fun Vaults.toVaultDataModel(): VaultDataModel {
     return VaultDataModel(
-        id = this.id,
         name = this.name,
         mountPoint = this.mount,
         dataDir = this.path

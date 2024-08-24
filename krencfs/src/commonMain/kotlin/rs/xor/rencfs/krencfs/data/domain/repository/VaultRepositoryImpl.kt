@@ -22,6 +22,7 @@ class VaultRepositoryImpl(
     override suspend fun updateVault(id: String, name: String, mountPoint: String, dataDir: String) {
         val vaultId = id.toLongOrNull()
         if (vaultId != null) {
+            println("VaultRepositoryImpl Update vault id: $id, name: $name, mountPoint: $mountPoint, dataDir: $dataDir")
             localDataSource.updateVault(vaultId, name, mountPoint, dataDir)
         } else {
             throw IllegalArgumentException("Invalid vault ID")

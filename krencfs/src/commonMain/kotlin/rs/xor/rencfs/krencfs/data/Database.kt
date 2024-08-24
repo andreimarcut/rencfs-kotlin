@@ -11,7 +11,8 @@ import rs.xor.rencfs.krencfs.data.domain.repository.VaultRepository
 import rs.xor.rencfs.krencfs.data.domain.repository.VaultRepositoryImpl
 
 expect suspend fun provideSQLDriver(
-    schema: SqlSchema<QueryResult.AsyncValue<Unit>>
+    schema: SqlSchema<QueryResult.AsyncValue<Unit>>,
+    databaseName: String,
 ): SqlDriver
 
 object Database {
@@ -19,7 +20,7 @@ object Database {
     @OptIn(DelicateCoroutinesApi::class)
     private val vaultsRepository: Deferred<VaultRepository> by lazy {
         GlobalScope.async(Dispatchers.IO) {
-            val driver = provideSQLDriver(KrenkfsDB.Schema)
+            val driver = provideSQLDriver(KrenkfsDB.Schema, "Vaults")
             val vaults = VaultsQueries(driver)
             val localVaultsSource = VaultLocalDataSource(vaults)
             VaultRepositoryImpl(localVaultsSource)
