@@ -14,7 +14,8 @@ actual suspend fun provideSQLDriver(
     val databaseFileName = "${databaseName}.sqlite.db"
     return JdbcSqliteDriver("jdbc:sqlite:$databaseFileName")
         .also {
-            if (!File(databaseName).exists()) {
+            var dbFile = File(databaseFileName)
+            if (!dbFile.exists()) {
                 schema.awaitCreate(it)
             }
             return it
