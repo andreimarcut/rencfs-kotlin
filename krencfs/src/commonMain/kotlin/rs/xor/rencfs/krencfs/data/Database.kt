@@ -31,4 +31,5 @@ object Database {
     suspend fun getVaultRepository(): VaultRepository {
         return vaultsRepository.await()
     }
+    
 }
