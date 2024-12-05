@@ -55,8 +55,8 @@ kotlin {
                 api(compose.animation)
                 api(compose.animationGraphics)
 
-//                implementation(deps.jetbrains.compose.material.navigation)
-//                implementation(deps.jetbrains.androidx.navigation)
+                implementation(deps.jetbrains.compose.material.navigation)
+                implementation(deps.jetbrains.androidx.navigation)
 
                 implementation(compose.components.uiToolingPreview)
                 implementation(deps.bundles.common.filekit)
