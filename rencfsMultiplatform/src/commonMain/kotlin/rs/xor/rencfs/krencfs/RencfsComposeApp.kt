@@ -4,21 +4,34 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
-import androidx.navigation.compose.*
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import kotlinx.coroutines.launch
-import rs.xor.rencfs.krencfs.data.sqldelight.SQLDelightDB
+import rs.xor.rencfs.krencfs.ui.components.VaultEditor
 import rs.xor.rencfs.krencfs.ui.screens.AboutScreen
 import rs.xor.rencfs.krencfs.ui.screens.SettingsScreen
-import rs.xor.rencfs.krencfs.ui.screens.VaultDetailScreen
 import rs.xor.rencfs.krencfs.ui.screens.VaultListScreen
+import rs.xor.rencfs.krencfs.ui.screens.VaultViewer
 
 enum class RencfsScreen(
     val route: String,
@@ -27,24 +40,24 @@ enum class RencfsScreen(
     val showInBottomBar: Boolean = true
 ) {
     VaultList("vaults", "Vaults", Icons.Filled.Folder),
-    VaultDetail("vault/{vaultId}", "Vault Details", Icons.Filled.Edit, false),
+    VaultDetail("vault/{vaultId}", "Vault Details", Icons.Filled.Folder, false),
+    VaultEdit("vault/{vaultId}/edit", "Edit Vault", Icons.Filled.Edit, false),
     Settings("settings", "Settings", Icons.Filled.Settings),
     About("about", "About", Icons.Filled.Info);
 
     companion object {
         fun vaultDetailRoute(vaultId: String) = "vault/$vaultId"
+        fun vaultEditRoute(vaultId: String) = "vault/$vaultId/edit"
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RencfsComposeApp() {
-    val scope = rememberCoroutineScope()
     val navController = rememberNavController()
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
-    var isEditing by remember { mutableStateOf(false) }
 
-    val currentScreen = RencfsScreen.entries.find {
+    val currentScreen = RencfsScreen.values().find {
         it.route == currentBackStackEntry?.destination?.route
     } ?: RencfsScreen.VaultList
 
@@ -53,41 +66,33 @@ fun RencfsComposeApp() {
             TopAppBar(
                 title = { Text(currentScreen.title) },
                 navigationIcon = {
-                    if (currentScreen == RencfsScreen.VaultDetail) {
-                        IconButton(onClick = {
-                            if (isEditing) {
-                                isEditing = false
-                            } else {
-                                navController.navigateUp()
-                            }
-                        }) {
+                    if (!currentScreen.showInBottomBar) {
+                        IconButton(onClick = { navController.navigateUp() }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
                         }
                     }
                 },
                 actions = {
-                    if (currentScreen == RencfsScreen.VaultDetail) {
-                        if (isEditing) {
-                            // Show save button when editing
+                    when (currentScreen) {
+                        RencfsScreen.VaultDetail -> {
                             IconButton(onClick = {
-                                // Save action will be handled by the screen
-                                isEditing = false
+                                currentBackStackEntry?.arguments?.getString("vaultId")
+                                    ?.let { vaultId ->
+                                        navController.navigate(RencfsScreen.vaultEditRoute(vaultId))
+                                    }
                             }) {
-                                Icon(Icons.Filled.Save, "Save")
-                            }
-                        } else {
-                            // Show edit button when viewing
-                            IconButton(onClick = { isEditing = true }) {
                                 Icon(Icons.Filled.Edit, "Edit")
                             }
                         }
+
+                        else -> {}
                     }
                 }
             )
         },
         bottomBar = {
             NavigationBar {
-                RencfsScreen.entries
+                RencfsScreen.values()
                     .filter { it.showInBottomBar }
                     .forEach { screen ->
                         NavigationBarItem(
@@ -106,19 +111,6 @@ fun RencfsComposeApp() {
                         )
                     }
             }
-        },
-        floatingActionButton = {
-            if (currentScreen == RencfsScreen.VaultList) {
-                FloatingActionButton(
-                    onClick = {
-                        scope.launch {
-                            SQLDelightDB.getVaultRepositoryAsync().addVault()
-                        }
-                    }
-                ) {
-                    Icon(Icons.Filled.Add, "Add Vault")
-                }
-            }
         }
     ) { padding ->
         NavHost(
@@ -129,7 +121,6 @@ fun RencfsComposeApp() {
             composable(RencfsScreen.VaultList.route) {
                 VaultListScreen(
                     onVaultSelected = { vaultId ->
-                        isEditing = false // Reset edit mode when navigating
                         navController.navigate(RencfsScreen.vaultDetailRoute(vaultId))
                     }
                 )
@@ -139,22 +130,16 @@ fun RencfsComposeApp() {
                 arguments = listOf(navArgument("vaultId") { type = NavType.StringType })
             ) { backStackEntry ->
                 val vaultId = backStackEntry.arguments?.getString("vaultId")
-                VaultDetailScreen(
+                VaultViewer(vaultId = vaultId)
+            }
+            composable(
+                route = RencfsScreen.VaultEdit.route,
+                arguments = listOf(navArgument("vaultId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val vaultId = backStackEntry.arguments?.getString("vaultId")
+                VaultEditor(
                     vaultId = vaultId,
-                    isEditing = isEditing,
-                    onSave = { updatedVault ->
-                        scope.launch {
-                            vaultId?.let {
-                                SQLDelightDB.getVaultRepositoryAsync().updateVault(
-                                    it,
-                                    updatedVault.name,
-                                    updatedVault.dataDir,
-                                    updatedVault.mountPoint
-                                )
-                                isEditing = false
-                            }
-                        }
-                    }
+                    onSave = { navController.navigateUp() }
                 )
             }
             composable(RencfsScreen.Settings.route) { SettingsScreen() }
