@@ -1,5 +1,12 @@
 package rs.xor.rencfs.krencfs
 
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -116,7 +123,25 @@ fun RencfsComposeApp() {
         NavHost(
             navController = navController,
             startDestination = RencfsScreen.VaultList.route,
-            modifier = Modifier.fillMaxSize().padding(padding)
+            modifier = Modifier.fillMaxSize().padding(padding),
+            enterTransition = {
+                slideInVertically(
+                    initialOffsetY = { it },
+                    animationSpec = tween(200)
+                )
+            },
+            exitTransition = { ExitTransition.None },
+            popEnterTransition = { EnterTransition.None },
+            popExitTransition = {
+                slideOutVertically(
+                    targetOffsetY = { it },
+                    animationSpec = tween(200)
+                )
+            },
+//            enterTransition = { EnterTransition.None },
+//            exitTransition = { ExitTransition.None },
+//            popEnterTransition = { EnterTransition.None },
+//            popExitTransition = { ExitTransition.None }
         ) {
             composable(RencfsScreen.VaultList.route) {
                 VaultListScreen(
